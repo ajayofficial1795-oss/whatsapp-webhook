@@ -10,6 +10,12 @@ def people_options(limit: int = 10) -> list[dict]:
     ]
 
 
+def selected_id(value):
+    if isinstance(value, dict):
+        return value.get("id") or value.get("title")
+    return value
+
+
 async def handle_flow_data(payload: dict) -> dict:
     action = payload.get("action", "init")
     normalized_action = action.lower()
@@ -24,28 +30,32 @@ async def handle_flow_data(payload: dict) -> dict:
         return {"version": version, "screen": "TREK_SELECTION", "data": {"treks": trek_options()}}
 
     if screen == "TREK_SELECTION":
-        trek = find_trek(data.get("trek_id"))
+        trek_id = selected_id(data.get("trek_id"))
+        trek = find_trek(trek_id)
         return {
             "version": version,
             "screen": "DATE_SELECTION",
             "data": {
-                "trek_id": data.get("trek_id"),
+                "trek_id": trek_id,
                 "trek_name": trek.get("name") if trek else "",
-                "dates": date_options(data.get("trek_id")),
+                "dates": date_options(trek_id),
                 "people_options": people_options(),
             },
         }
 
     if screen == "DATE_SELECTION":
-        trek = find_trek(data.get("trek_id"))
+        trek_id = selected_id(data.get("trek_id"))
+        trek_date_id = selected_id(data.get("trek_date_id"))
+        trek_people = selected_id(data.get("trek_people"))
+        trek = find_trek(trek_id)
         if not trek:
             return {"version": version, "screen": "BOOKING_SUMMARY", "data": {"ok": False, "error": "Unknown trek"}}
 
-        trek_date = find_date(trek, data.get("trek_date_id"))
+        trek_date = find_date(trek, trek_date_id)
         if not trek_date:
             return {"version": version, "screen": "BOOKING_SUMMARY", "data": {"ok": False, "error": "Unknown trek date"}}
 
-        trek_people = int(data.get("trek_people") or 1)
+        trek_people = int(trek_people or 1)
         price = int(trek_date.get("price_per_person") or trek["price_per_person"])
         total = price * trek_people
         booking = create_booking(
