@@ -1,6 +1,7 @@
 import httpx
 
 from app.config import settings
+from app.treks import trek_options
 
 
 def normalize_phone(phone: str) -> str:
@@ -22,10 +23,11 @@ def build_trek_flow_message(to: str) -> dict:
                 "parameters": {
                     "flow_message_version": "3",
                     "mode": "draft",
+                    "flow_token": "trek_booking_draft",
                     "flow_id": settings.meta_trek_flow_id,
                     "flow_cta": "Book Trek",
                     "flow_action": "navigate",
-                    "flow_action_payload": {"screen": "TREK_SELECTION", "data": {}},
+                    "flow_action_payload": {"screen": "TREK_SELECTION", "data": {"treks": trek_options()}},
                 },
             },
         },
