@@ -12,13 +12,14 @@ def people_options(limit: int = 10) -> list[dict]:
 
 async def handle_flow_data(payload: dict) -> dict:
     action = payload.get("action", "init")
+    normalized_action = action.lower()
     screen = payload.get("screen", "TREK_SELECTION")
     data = payload.get("data") or payload
 
-    if action == "ping":
+    if normalized_action == "ping":
         return {"data": {"status": "active"}}
 
-    if action == "init":
+    if normalized_action == "init":
         return {"screen": "TREK_SELECTION", "data": {"treks": trek_options()}}
 
     if screen == "TREK_SELECTION":
