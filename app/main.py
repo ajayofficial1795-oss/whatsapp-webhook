@@ -69,8 +69,8 @@ def treks() -> dict:
     return {"ok": True, "treks": active_treks()}
 
 
-@app.post("/api/whatsapp-flow-data")
-async def whatsapp_flow_data(request: Request) -> Response | dict:
+@app.post("/api/whatsapp-flow-data", response_model=None)
+async def whatsapp_flow_data(request: Request):
     payload = await request.json()
 
     if not is_encrypted_flow_request(payload):
