@@ -64,6 +64,19 @@ async def handle_flow_data(payload: dict) -> dict:
         booking.update(payment)
         update_booking(booking["booking_id"], payment)
 
-        return {"screen": "BOOKING_SUMMARY", "data": {"ok": True, **booking}}
+        return {
+            "screen": "BOOKING_SUMMARY",
+            "data": {
+                "ok": True,
+                "error": "",
+                "booking_id": booking["booking_id"],
+                "trek_name": booking["trek_name"],
+                "trek_date": booking["trek_date"],
+                "trek_people": str(booking["trek_people"]),
+                "total_price_display": booking["total_price_display"],
+                "payment_link": booking["payment_link"],
+                "payment_status": booking["payment_status"],
+            },
+        }
 
     return {"screen": "TREK_SELECTION", "data": {"treks": trek_options()}}
