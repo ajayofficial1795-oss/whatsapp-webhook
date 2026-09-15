@@ -13,6 +13,7 @@ def people_options(limit: int = 10) -> list[dict]:
 async def handle_flow_data(payload: dict) -> dict:
     action = payload.get("action", "init")
     normalized_action = action.lower()
+    version = payload.get("version", "3.0")
     screen = payload.get("screen", "TREK_SELECTION")
     data = payload.get("data") or payload
 
@@ -20,11 +21,12 @@ async def handle_flow_data(payload: dict) -> dict:
         return {"data": {"status": "active"}}
 
     if normalized_action == "init":
-        return {"screen": "TREK_SELECTION", "data": {"treks": trek_options()}}
+        return {"version": version, "screen": "TREK_SELECTION", "data": {"treks": trek_options()}}
 
     if screen == "TREK_SELECTION":
         trek = find_trek(data.get("trek_id"))
         return {
+            "version": version,
             "screen": "DATE_SELECTION",
             "data": {
                 "trek_id": data.get("trek_id"),
@@ -37,11 +39,11 @@ async def handle_flow_data(payload: dict) -> dict:
     if screen == "DATE_SELECTION":
         trek = find_trek(data.get("trek_id"))
         if not trek:
-            return {"screen": "BOOKING_SUMMARY", "data": {"ok": False, "error": "Unknown trek"}}
+            return {"version": version, "screen": "BOOKING_SUMMARY", "data": {"ok": False, "error": "Unknown trek"}}
 
         trek_date = find_date(trek, data.get("trek_date_id"))
         if not trek_date:
-            return {"screen": "BOOKING_SUMMARY", "data": {"ok": False, "error": "Unknown trek date"}}
+            return {"version": version, "screen": "BOOKING_SUMMARY", "data": {"ok": False, "error": "Unknown trek date"}}
 
         trek_people = int(data.get("trek_people") or 1)
         price = int(trek_date.get("price_per_person") or trek["price_per_person"])
@@ -65,6 +67,7 @@ async def handle_flow_data(payload: dict) -> dict:
         update_booking(booking["booking_id"], payment)
 
         return {
+            "version": version,
             "screen": "BOOKING_SUMMARY",
             "data": {
                 "ok": True,
@@ -79,4 +82,4 @@ async def handle_flow_data(payload: dict) -> dict:
             },
         }
 
-    return {"screen": "TREK_SELECTION", "data": {"treks": trek_options()}}
+    return {"version": version, "screen": "TREK_SELECTION", "data": {"treks": trek_options()}}
