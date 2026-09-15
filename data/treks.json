@@ -1,0 +1,63 @@
+{
+  "treks": [
+    {
+      "id": "netravathi",
+      "name": "Netravathi Trek",
+      "price_per_person": 4199,
+      "active": true,
+      "dates": [
+        {
+          "id": "2026-09-20",
+          "date": "2026-09-20",
+          "label": "20 Sep 2026",
+          "available_seats": 12,
+          "active": true
+        },
+        {
+          "id": "2026-09-27",
+          "date": "2026-09-27",
+          "label": "27 Sep 2026",
+          "available_seats": 8,
+          "active": true
+        }
+      ]
+    },
+    {
+      "id": "kudremukha",
+      "name": "Kudremukha Trek",
+      "price_per_person": 4199,
+      "active": true,
+      "dates": [
+        {
+          "id": "2026-09-21",
+          "date": "2026-09-21",
+          "label": "21 Sep 2026",
+          "available_seats": 10,
+          "active": true
+        },
+        {
+          "id": "2026-10-04",
+          "date": "2026-10-04",
+          "label": "04 Oct 2026",
+          "available_seats": 15,
+          "active": true
+        }
+      ]
+    },
+    {
+      "id": "kodachadri",
+      "name": "Kodachadri Trek",
+      "price_per_person": 4199,
+      "active": true,
+      "dates": [
+        {
+          "id": "2026-09-28",
+          "date": "2026-09-28",
+          "label": "28 Sep 2026",
+          "available_seats": 9,
+          "active": true
+        }
+      ]
+    }
+  ]
+}
