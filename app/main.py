@@ -1,4 +1,5 @@
 import json
+import os
 
 from fastapi import BackgroundTasks, FastAPI, Header, Request, Response
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -12,6 +13,23 @@ from app.storage import append_payment, find_booking, update_booking
 from app.treks import active_treks
 
 app = FastAPI(title="Direct Meta WhatsApp Trek Booking")
+
+
+def read_whatsapp_flow_private_key() -> str:
+    configured_key = getattr(settings, "whatsapp_flow_private_key", "")
+    if configured_key:
+        return configured_key.replace("\\n", "\n")
+
+    env_key = os.getenv("WHATSAPP_FLOW_PRIVATE_KEY", "")
+    if env_key:
+        return env_key.replace("\\n", "\n")
+
+    key_file_path = os.getenv("WHATSAPP_FLOW_PRIVATE_KEY_FILE", "/etc/secrets/whatsapp-flow-private.pem")
+    try:
+        with open(key_file_path, encoding="utf-8") as key_file:
+            return key_file.read()
+    except FileNotFoundError:
+        return ""
 
 
 @app.get("/")
@@ -76,11 +94,12 @@ async def whatsapp_flow_data(request: Request):
     if not is_encrypted_flow_request(payload):
         return await handle_flow_data(payload)
 
-    if not settings.whatsapp_flow_private_key:
+    private_key = read_whatsapp_flow_private_key()
+    if not private_key:
         return JSONResponse({"ok": False, "error": "WHATSAPP_FLOW_PRIVATE_KEY is not configured"}, status_code=500)
 
     try:
-        decrypted_request = decrypt_flow_request(payload, settings.whatsapp_flow_private_key)
+        decrypted_request = decrypt_flow_request(payload, private_key)
     except Exception as error:
         print(f"Failed to decrypt WhatsApp Flow request: {error}")
         return JSONResponse({}, status_code=421)
