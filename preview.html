@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WhatsApp Flow Preview</title>
+  <style>
+    :root {
+      --bg: #e7f0df;
+      --panel: #f9fbf4;
+      --phone: #101814;
+      --screen: #efe7d4;
+      --chat: #ffffff;
+      --sent: #d9fdd3;
+      --ink: #18221d;
+      --muted: #657068;
+      --green: #0b7b57;
+      --green-strong: #075f43;
+      --line: #ccd8ca;
+      --accent: #f0b24b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(11, 123, 87, 0.16), transparent 42%),
+        radial-gradient(circle at 80% 12%, rgba(240, 178, 75, 0.22), transparent 28%),
+        var(--bg);
+      font-family: Avenir Next, Gill Sans, Trebuchet MS, sans-serif;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(310px, 390px) minmax(280px, 430px);
+      gap: 30px;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 32px;
+    }
+
+    .phone {
+      width: 100%;
+      max-width: 390px;
+      height: min(760px, calc(100vh - 64px));
+      min-height: 650px;
+      padding: 14px;
+      border-radius: 34px;
+      background: var(--phone);
+      box-shadow: 0 28px 80px rgba(16, 24, 20, 0.28);
+    }
+
+    .screen {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 24px;
+      background: var(--screen);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px;
+      background: var(--green);
+      color: #fff;
+    }
+
+    .avatar {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #dbe7d6;
+      color: var(--green-strong);
+      font-weight: 800;
+    }
+
+    .topbar strong {
+      display: block;
+      font-size: 15px;
+      line-height: 1.1;
+    }
+
+    .topbar span {
+      font-size: 12px;
+      opacity: 0.86;
+    }
+
+    .chat {
+      flex: 1;
+      overflow: auto;
+      padding: 16px 12px 24px;
+    }
+
+    .bubble {
+      width: fit-content;
+      max-width: 86%;
+      margin: 0 0 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--chat);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+      font-size: 14px;
+      line-height: 1.42;
+      white-space: pre-line;
+    }
+
+    .bubble.sent {
+      margin-left: auto;
+      background: var(--sent);
+    }
+
+    .time {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 10px;
+      text-align: right;
+    }
+
+    .flow-card {
+      width: 88%;
+      margin: 12px 0;
+      overflow: hidden;
+      border-radius: 14px;
+      background: var(--chat);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+    }
+
+    .flow-head {
+      padding: 15px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .flow-head strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 15px;
+    }
+
+    .flow-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .flow-button,
+    .primary {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: var(--green);
+      cursor: pointer;
+      font: inherit;
+      font-weight: 800;
+    }
+
+    .flow-button {
+      padding: 13px;
+    }
+
+    .composer {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      padding: 10px;
+      background: #f8f4e8;
+    }
+
+    .composer input {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 10px 12px;
+      font: inherit;
+    }
+
+    .composer button,
+    .primary {
+      border-radius: 18px;
+      padding: 10px 16px;
+      background: var(--green);
+      color: #fff;
+    }
+
+    .flow-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(8, 18, 13, 0.45);
+    }
+
+    .flow-modal.open {
+      display: flex;
+    }
+
+    .flow-sheet {
+      width: min(420px, 100%);
+      max-height: min(720px, calc(100vh - 48px));
+      overflow: auto;
+      border-radius: 18px;
+      background: var(--panel);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+    }
+
+    .flow-title {
+      position: sticky;
+      top: 0;
+      padding: 18px 18px 12px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .flow-title h1 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    .flow-title p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .flow-body {
+      padding: 18px;
+    }
+
+    label {
+      display: block;
+      margin: 0 0 6px;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    select,
+    input[type="text"] {
+      width: 100%;
+      min-height: 42px;
+      margin-bottom: 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+    }
+
+    .summary {
+      display: grid;
+      gap: 9px;
+      margin-bottom: 16px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      font-size: 14px;
+    }
+
+    .summary div {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .summary span:first-child {
+      color: var(--muted);
+    }
+
+    .side {
+      max-width: 430px;
+    }
+
+    .side h2 {
+      margin: 0 0 14px;
+      font-size: clamp(30px, 5vw, 48px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .side p {
+      margin: 0 0 18px;
+      color: #3f4a42;
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    .steps {
+      display: grid;
+      gap: 10px;
+    }
+
+    .step {
+      padding: 12px 14px;
+      border-left: 4px solid var(--green);
+      background: rgba(249, 251, 244, 0.74);
+      font-size: 14px;
+    }
+
+    .step strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    @media (max-width: 820px) {
+      main {
+        grid-template-columns: 1fr;
+        padding: 18px;
+      }
+
+      .side {
+        order: -1;
+      }
+
+      .phone {
+        height: 680px;
+        min-height: 620px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="phone" aria-label="WhatsApp phone preview">
+      <div class="screen">
+        <div class="topbar">
+          <div class="avatar">T</div>
+          <div>
+            <strong>Trek Booking</strong>
+            <span>WhatsApp Business</span>
+          </div>
+        </div>
+        <div class="chat" id="chat">
+          <div class="bubble sent">book trek<span class="time">10:24</span></div>
+          <div class="bubble">Sure. Tap below to choose trek, date, and people count.<span class="time">10:24</span></div>
+          <div class="flow-card">
+            <div class="flow-head">
+              <strong>Book Your Trek</strong>
+              <p>Choose trek, date, and people count. Secure payment after selection.</p>
+            </div>
+            <button class="flow-button" type="button" id="openFlow">Book Trek</button>
+          </div>
+        </div>
+        <form class="composer" id="composer">
+          <input id="message" value="book trek" aria-label="message text">
+          <button type="submit">Send</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="side" aria-label="Flow explanation">
+      <h2>User Experience Preview</h2>
+      <p>This is how the customer will see your direct Meta WhatsApp Flow. The API is triggered after the user sends a booking keyword, then your backend sends the Flow button.</p>
+      <div class="steps">
+        <div class="step"><strong>1. Customer sends keyword</strong>Meta webhook receives <code>book trek</code>.</div>
+        <div class="step"><strong>2. Backend sends Flow</strong>Your API calls Meta <code>/messages</code> with an interactive Flow payload.</div>
+        <div class="step"><strong>3. Customer completes Flow</strong>Treks and dates are loaded from your API.</div>
+        <div class="step"><strong>4. Payment starts</strong>Your API creates a booking ID and payment link.</div>
+      </div>
+    </section>
+  </main>
+
+  <div class="flow-modal" id="flowModal" role="dialog" aria-modal="true" aria-labelledby="flowHeading">
+    <div class="flow-sheet">
+      <div class="flow-title">
+        <h1 id="flowHeading">Book Your Trek</h1>
+        <p id="flowSubheading">Select trek details</p>
+      </div>
+      <div class="flow-body" id="flowBody"></div>
+    </div>
+  </div>
+
+  <script>
+    const treks = [
+      {
+        id: 'netravathi',
+        name: 'Netravathi Trek',
+        price: 4199,
+        dates: [
+          { id: '2026-09-20', label: '20 Sep 2026', seats: 12 },
+          { id: '2026-09-27', label: '27 Sep 2026', seats: 8 }
+        ]
+      },
+      {
+        id: 'kudremukha',
+        name: 'Kudremukha Trek',
+        price: 4199,
+        dates: [
+          { id: '2026-09-21', label: '21 Sep 2026', seats: 10 },
+          { id: '2026-10-04', label: '04 Oct 2026', seats: 15 }
+        ]
+      },
+      {
+        id: 'kodachadri',
+        name: 'Kodachadri Trek',
+        price: 4199,
+        dates: [{ id: '2026-09-28', label: '28 Sep 2026', seats: 9 }]
+      }
+    ];
+
+    const state = {
+      trekId: treks[0].id,
+      dateId: treks[0].dates[0].id,
+      people: 2,
+      customerName: 'Ajay',
+      customerPhone: '918884945557'
+    };
+
+    const chat = document.querySelector('#chat');
+    const modal = document.querySelector('#flowModal');
+    const flowBody = document.querySelector('#flowBody');
+    const flowSubheading = document.querySelector('#flowSubheading');
+
+    function formatInr(amount) {
+      return `Rs. ${amount.toLocaleString('en-IN')}`;
+    }
+
+    function optionList(items, selectedId) {
+      return items.map((item) => `<option value="${item.id}" ${item.id === selectedId ? 'selected' : ''}>${item.title}</option>`).join('');
+    }
+
+    function selectedTrek() {
+      return treks.find((trek) => trek.id === state.trekId) || treks[0];
+    }
+
+    function selectedDate() {
+      const trek = selectedTrek();
+      return trek.dates.find((date) => date.id === state.dateId) || trek.dates[0];
+    }
+
+    function addBubble(text, sent = false) {
+      const bubble = document.createElement('div');
+      bubble.className = `bubble${sent ? ' sent' : ''}`;
+      bubble.innerHTML = `${text}<span class="time">10:25</span>`;
+      chat.appendChild(bubble);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function showTrekScreen() {
+      flowSubheading.textContent = 'Step 1 of 3';
+      flowBody.innerHTML = `
+        <label for="trek">Trek</label>
+        <select id="trek">
+          ${optionList(treks.map((trek) => ({ id: trek.id, title: `${trek.name} - ${formatInr(trek.price)}` })), state.trekId)}
+        </select>
+        <button class="primary" type="button" id="continueDate">Continue</button>
+      `;
+
+      document.querySelector('#continueDate').addEventListener('click', () => {
+        state.trekId = document.querySelector('#trek').value;
+        state.dateId = selectedTrek().dates[0].id;
+        showDateScreen();
+      });
+    }
+
+    function showDateScreen() {
+      const trek = selectedTrek();
+      flowSubheading.textContent = 'Step 2 of 3';
+      flowBody.innerHTML = `
+        <label for="date">Date</label>
+        <select id="date">
+          ${optionList(trek.dates.map((date) => ({ id: date.id, title: `${date.label} - ${date.seats} seats` })), state.dateId)}
+        </select>
+        <label for="people">People Count</label>
+        <select id="people">
+          ${Array.from({ length: 10 }, (_, index) => index + 1).map((count) => `<option value="${count}" ${count === state.people ? 'selected' : ''}>${count}</option>`).join('')}
+        </select>
+        <label for="name">Name</label>
+        <input id="name" type="text" value="${state.customerName}">
+        <label for="phone">Phone Number</label>
+        <input id="phone" type="text" value="${state.customerPhone}">
+        <button class="primary" type="button" id="continueSummary">Review Booking</button>
+      `;
+
+      document.querySelector('#continueSummary').addEventListener('click', () => {
+        state.dateId = document.querySelector('#date').value;
+        state.people = Number(document.querySelector('#people').value);
+        state.customerName = document.querySelector('#name').value;
+        state.customerPhone = document.querySelector('#phone').value;
+        showSummaryScreen();
+      });
+    }
+
+    function showSummaryScreen() {
+      const trek = selectedTrek();
+      const date = selectedDate();
+      const total = trek.price * state.people;
+      const bookingId = 'BK-20260915-DEMO';
+      const paymentLink = 'https://rzp.io/i/demo-link';
+
+      flowSubheading.textContent = 'Step 3 of 3';
+      flowBody.innerHTML = `
+        <div class="summary">
+          <div><span>Booking ID</span><strong>${bookingId}</strong></div>
+          <div><span>Trek</span><strong>${trek.name}</strong></div>
+          <div><span>Date</span><strong>${date.label}</strong></div>
+          <div><span>People</span><strong>${state.people}</strong></div>
+          <div><span>Total</span><strong>${formatInr(total)}</strong></div>
+        </div>
+        <button class="primary" type="button" id="finishFlow">Send Payment Link</button>
+      `;
+
+      document.querySelector('#finishFlow').addEventListener('click', () => {
+        modal.classList.remove('open');
+        addBubble(`Booking created.\n\nBooking ID: ${bookingId}\nAmount: ${formatInr(total)}\n\nPay here: ${paymentLink}`);
+        setTimeout(() => {
+          addBubble(`Payment received.\n\nBooking confirmed.\nTransaction ID: pay_demo_12345`);
+        }, 900);
+      });
+    }
+
+    document.querySelector('#openFlow').addEventListener('click', () => {
+      modal.classList.add('open');
+      showTrekScreen();
+    });
+
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        modal.classList.remove('open');
+      }
+    });
+
+    document.querySelector('#composer').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const input = document.querySelector('#message');
+      addBubble(input.value, true);
+      addBubble('Tap below to start your trek booking.');
+      const card = document.createElement('div');
+      card.className = 'flow-card';
+      card.innerHTML = '<div class="flow-head"><strong>Book Your Trek</strong><p>Choose trek, date, and people count.</p></div><button class="flow-button" type="button">Book Trek</button>';
+      card.querySelector('button').addEventListener('click', () => {
+        modal.classList.add('open');
+        showTrekScreen();
+      });
+      chat.appendChild(card);
+      chat.scrollTop = chat.scrollHeight;
+    });
+  </script>
+</body>
+</html>
