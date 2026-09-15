@@ -21,6 +21,7 @@ def build_trek_flow_message(to: str) -> dict:
                 "name": "flow",
                 "parameters": {
                     "flow_message_version": "3",
+                    "mode": "draft",
                     "flow_id": settings.meta_trek_flow_id,
                     "flow_cta": "Book Trek",
                     "flow_action": "navigate",
