@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 
 from app.config import settings
 from app.flow import handle_flow_data
+from app.flow_crypto import decrypt_flow_request, encrypt_flow_response, is_encrypted_flow_request
 from app.meta import extract_message, send_confirmation, send_payment_link, send_trek_flow, should_start_booking
 from app.payments import parse_razorpay_webhook, verify_razorpay_signature
 from app.storage import append_payment, find_booking, update_booking
@@ -13,26 +14,54 @@ from app.treks import active_treks
 app = FastAPI(title="Direct Meta WhatsApp Trek Booking")
 
 
+@app.get("/")
+def root() -> dict:
+    return {
+        "ok": True,
+        "service": "Direct Meta WhatsApp Trek Booking",
+        "webhook": "/webhook",
+        "health": "/health",
+    }
+
+
 @app.get("/health")
 def health() -> dict:
     return {"ok": True}
 
 
-@app.get("/webhook/whatsapp")
-def verify_whatsapp_webhook(request: Request) -> Response:
+def verify_webhook_request(request: Request) -> Response:
     params = request.query_params
     if params.get("hub.mode") == "subscribe" and params.get("hub.verify_token") == settings.meta_verify_token:
         return PlainTextResponse(params.get("hub.challenge", ""))
     return JSONResponse({"ok": False, "error": "Invalid verify token"}, status_code=403)
 
 
-@app.post("/webhook/whatsapp")
-async def whatsapp_webhook(request: Request, background_tasks: BackgroundTasks) -> dict:
+async def handle_whatsapp_webhook_request(request: Request, background_tasks: BackgroundTasks) -> dict:
     payload = await request.json()
     message = extract_message(payload)
     if should_start_booking(message):
         background_tasks.add_task(send_trek_flow, message["from"])
     return {"ok": True}
+
+
+@app.get("/webhook")
+def verify_webhook(request: Request) -> Response:
+    return verify_webhook_request(request)
+
+
+@app.post("/webhook")
+async def webhook(request: Request, background_tasks: BackgroundTasks) -> dict:
+    return await handle_whatsapp_webhook_request(request, background_tasks)
+
+
+@app.get("/webhook/whatsapp")
+def verify_whatsapp_webhook(request: Request) -> Response:
+    return verify_webhook_request(request)
+
+
+@app.post("/webhook/whatsapp")
+async def whatsapp_webhook(request: Request, background_tasks: BackgroundTasks) -> dict:
+    return await handle_whatsapp_webhook_request(request, background_tasks)
 
 
 @app.get("/api/treks")
@@ -41,8 +70,28 @@ def treks() -> dict:
 
 
 @app.post("/api/whatsapp-flow-data")
-async def whatsapp_flow_data(request: Request) -> dict:
-    return await handle_flow_data(await request.json())
+async def whatsapp_flow_data(request: Request) -> Response | dict:
+    payload = await request.json()
+
+    if not is_encrypted_flow_request(payload):
+        return await handle_flow_data(payload)
+
+    if not settings.whatsapp_flow_private_key:
+        return JSONResponse({"ok": False, "error": "WHATSAPP_FLOW_PRIVATE_KEY is not configured"}, status_code=500)
+
+    try:
+        decrypted_request = decrypt_flow_request(payload, settings.whatsapp_flow_private_key)
+    except Exception as error:
+        print(f"Failed to decrypt WhatsApp Flow request: {error}")
+        return JSONResponse({}, status_code=421)
+
+    response_payload = await handle_flow_data(decrypted_request.payload)
+    encrypted_response = encrypt_flow_response(
+        response_payload,
+        decrypted_request.aes_key,
+        decrypted_request.initial_vector,
+    )
+    return PlainTextResponse(encrypted_response)
 
 
 @app.post("/api/send-trek-booking-flow")
