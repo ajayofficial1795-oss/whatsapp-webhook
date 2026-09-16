@@ -114,9 +114,12 @@ async def whatsapp_flow_data(request: Request):
 
 
 @app.post("/api/send-trek-booking-flow")
-async def send_trek_booking_flow(request: Request) -> dict:
+async def send_trek_booking_flow(request: Request) -> Response:
     payload = await request.json()
-    return {"ok": True, "result": await send_trek_flow(payload["to"])}
+    try:
+        return JSONResponse({"ok": True, "result": await send_trek_flow(payload["to"])})
+    except ValueError as error:
+        return JSONResponse({"ok": False, "error": str(error)}, status_code=400)
 
 
 @app.post("/api/payment-webhook")
